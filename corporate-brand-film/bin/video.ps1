@@ -221,6 +221,7 @@ function Invoke-Shorts([string[]]$Args2) {
 
     switch ($sub) {
         'clip'     { & $py (Join-Path $dir 'scripts\veo_generate.py') @rest; exit $LASTEXITCODE }
+        'chain'    { & $py (Join-Path $dir 'scripts\chain.py') @rest;        exit $LASTEXITCODE }
         'assemble' { & $py (Join-Path $dir 'scripts\assemble.py') @rest;     exit $LASTEXITCODE }
         'prepare' {
             $ok = $true
@@ -242,6 +243,7 @@ function Invoke-Shorts([string[]]$Args2) {
 
   prepare                    실행 환경 점검
   clip   <veo_generate 인자>  Veo 클립 1개 생성 (약 600원/8초)
+  chain  <chain 인자>         프롬프트 목록 → 체이닝 생성 → 조립 원샷 (확인 받음)
   assemble <assemble 인자>    클립 이어붙이기 + 자막 번인 (무료)
 
 대본과 장면 분해는 명령이 아니라 대화로 한다 — Claude Code 에서
