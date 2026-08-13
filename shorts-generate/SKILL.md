@@ -132,6 +132,21 @@ python3 ~/.claude/skills/shorts-generate/scripts/veo_generate.py \
 
 장면별로 실행 (실패한 장면만 재실행하면 되도록 개별 파일):
 
+**원샷 체인 (시연·재실행용)**: 프롬프트가 준비돼 있으면 체이닝 생성부터 조립까지
+명령 하나로 돈다. 승인 게이트(4단계)를 통과한 뒤에만 실행할 것 — 스크립트도
+생성 직전에 확인 문구('chain')를 받는다 (`--yes` 로 생략 가능).
+
+```bash
+python3 ~/.claude/skills/shorts-generate/scripts/chain.py \
+  --prompts output/<폴더>/prompts/scene_01.txt output/<폴더>/prompts/scene_02.txt output/<폴더>/prompts/scene_03.txt \
+  --out-dir output/<폴더> [--subtitles output/<폴더>/subs.json]
+# 또는:  video shorts chain --prompts ... --out-dir ...
+```
+
+- 이미 있는 클립은 건너뛴다(이어하기) — 실패한 장면만 재생성되고, 전부 있으면 과금 없이 조립만 다시 한다.
+- 자동 체인은 중간 프레임 검수 없이 진행된다. **처음 만드는 소재는 아래처럼 한 클립씩 생성하며 추출 프레임을 보고 다음 프롬프트를 조정하는 쪽이 안전하다.** 검증된 프롬프트 세트의 재실행·시연에 원샷을 쓴다.
+- 체이닝이 필요 없는 몽타주형이면 `--no-chain` (각 장면 독립 text-to-video).
+
 ```bash
 # 일반 쇼츠
 python3 ~/.claude/skills/shorts-generate/scripts/veo_generate.py \

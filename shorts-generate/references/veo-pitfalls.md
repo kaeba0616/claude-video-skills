@@ -49,6 +49,25 @@ plain canvas 를 요청했는데 붓기 중에 고양이 그림이 갑자기 떠
 (어디까지) ③ 아직 그려지면 안 되는 것들의 명시적 부정. 프레임 체이닝과 함께
 쓰면 여러 클립에 걸친 드로잉 과정이 순서대로 이어진다.
 
+단, 진행량 제한은 **확률적이다** (실측): 같은 3요소를 넣어도 어떤 생성에서는
+클립 하나 안에서 얼굴 전체가 그려진다. 그래도 획 순서는 지켜지므로(빈 캔버스
+→ 부분 → 완성) 영상은 자연스럽다 — 초반 프레임(0.3s/1s/2s)을 뽑아 순서대로
+그려졌는지 확인하고, 계획보다 빨리 완성됐으면 다음 클립을 "더 그리지 않는
+리빌"로 바꿔 이어가라. 완성 상태에 도달한 뒤 또 그리게 하면 이미 있는 선을
+덧그리거나 망친다.
+
+## 정지·소품 디테일도 프롬프트가 결정한다
+
+실측 두 가지:
+- **영상이 멈춰 보인다**: 붓기 같은 단순 동작에서 Veo 가 프레임 대부분을 거의
+  정지 상태로 만들 수 있다. `continuous fluid motion throughout the whole clip,
+  never a still frame` + 움직일 것들을 나열(ripples, steam drifts, milk swirls)
+  하면 클립 내내 액체가 움직인다.
+- **도구가 막대기로 나온다**: `etching pen` 만 쓰면 밋밋한 금속 봉이 나온다.
+  생김새와 쥐는 법까지 묘사할 것 — `held the way one holds a pencil: a short
+  slim tool with a black rubber grip handle and a fine stainless steel needle
+  tip, clearly a precision pen and not a plain rod`.
+
 ## 클립이 이어지지 않으면 프레임 체이닝을 써라
 
 스타일 문구 블록을 모든 프롬프트에 반복해도 text-to-video 는 클립마다 잔·소품·
