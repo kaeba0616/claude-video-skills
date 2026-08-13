@@ -26,6 +26,29 @@ Veo는 **한 물체가 다른 물체를 변형시키는 동작**에 약하다 �
 같은 이유로 안전한 동작들: 떨어지기·퍼지기·흐르기·회전·카메라 이동·벌어지기.
 피할 동작들: 자르기·부수기·터뜨리기·조립·손으로 물체 변형.
 
+## 과정 영상에서 결과가 미리 튀어나온다 ★
+
+인과 동작 약점의 변형. "고양이를 그린다"고 하면 Veo 는 선을 순서대로 긋는 게
+아니라 **완성된 고양이를 클립 초반에 앞당겨 렌더링**한다. 우유 붓기에서도
+"라떼 아트"라는 맥락만으로 붓는 도중 완성 무늬가 표면에 나타난다 (실측:
+plain canvas 를 요청했는데 붓기 중에 고양이 그림이 갑자기 떠올랐다).
+
+**대책: 클립마다 진행량을 명시하고, 아직 없어야 할 것을 못박는다.** (실측 검증)
+
+```
+붓기 컷:   "the surface stays completely plain: no latte art pattern, no rosetta,
+           no tulip, no drawing, no design of any kind forms — just a blank canvas"
+드로잉 컷: "one single continuous line, the line appearing only where the pen tip
+           has already passed, no lines appear ahead of the pen" +
+           "by the end of the clip only this outline exists — no eyes, no nose yet"
+추가 컷:   "nothing else is added or changed; all existing lines stay exactly as
+           they are"
+```
+
+세 요소가 다 필요하다: ① 선이 펜 끝을 따라서만 생긴다 ② 이 클립의 종료 상태
+(어디까지) ③ 아직 그려지면 안 되는 것들의 명시적 부정. 프레임 체이닝과 함께
+쓰면 여러 클립에 걸친 드로잉 과정이 순서대로 이어진다.
+
 ## 클립이 이어지지 않으면 프레임 체이닝을 써라
 
 스타일 문구 블록을 모든 프롬프트에 반복해도 text-to-video 는 클립마다 잔·소품·

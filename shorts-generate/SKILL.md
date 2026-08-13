@@ -127,6 +127,7 @@ python3 ~/.claude/skills/shorts-generate/scripts/veo_generate.py \
 - **순차 생성이다** — 클립 N이 끝나야 N+1을 만들 수 있다. 병렬 불가, 총 시간 ≈ 클립 수 × 1~2분.
 - **다음 프롬프트는 추출한 프레임을 Read로 보고 쓴다.** 마지막 프레임의 실제 상태(펜이 남아 있나, 어디까지 그려졌나)가 대본과 다를 수 있다 — 프레임에 맞춰 프롬프트를 조정해야 자연스럽게 이어진다.
 - 프롬프트 서두에 `Continuing seamlessly from the first frame:` + 고정 구도 문구(`camera locked in place` 등)를 넣는다.
+- **드로잉·만들기 과정은 클립마다 진행량을 명시하라.** Veo는 결과를 앞당겨 렌더링한다 — "이 클립이 끝날 때 무엇까지 존재하는지" + "아직 없어야 할 것들"(no eyes, no nose yet)을 프롬프트에 못박아야 과정이 순서대로 진행된다. `references/veo-pitfalls.md`의 "결과가 미리 튀어나온다" 항목 참조.
 - `--image`와 `--reference-image`는 동시에 못 쓴다 (API 배타 모드). 제품 광고에서 둘 다 필요하면: 클립 1을 reference로 만들고 이후는 체이닝.
 
 장면별로 실행 (실패한 장면만 재실행하면 되도록 개별 파일):
