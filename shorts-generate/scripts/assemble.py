@@ -8,7 +8,9 @@ import sys
 import tempfile
 
 DEFAULT_W, DEFAULT_H = 720, 1280
-DEFAULT_FONT = "NanumGothic"  # fc-list :lang=ko 로 확인된 시스템 한글 폰트
+# 시스템 한글 폰트. Linux 는 나눔고딕(fc-list :lang=ko 로 확인), Windows 는
+# 기본 탑재된 맑은 고딕 — 나눔고딕이 설치돼 있으면 --font NanumGothic 으로 지정.
+DEFAULT_FONT = "Malgun Gothic" if sys.platform == "win32" else "NanumGothic"
 
 ASS_HEADER = """[Script Info]
 ScriptType: v4.00+

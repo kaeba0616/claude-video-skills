@@ -69,6 +69,20 @@ for mod in faster_whisper; do
 done
 
 echo
+echo "== 콜론 별칭 =="
+# './video:prepare' 같은 콜론 형태 명령. 콜론은 Windows 파일명에 쓸 수 없어
+# 저장소에 담으면 Windows 에서 clone 자체가 깨진다(checkout 실패) —
+# 그래서 저장소에는 넣지 않고 POSIX 환경에서 여기서 만든다.
+if ln -sf video "$SKILL_DIR/video:prepare" 2>/dev/null; then
+  for c in music new preview produce rebuild redo script shots stills testshot verify; do
+    ln -sf video "$SKILL_DIR/video:$c"
+  done
+  ok "video:<command> 별칭 12개 생성"
+else
+  printf "  \033[33m-\033[0m 심볼릭 링크를 만들 수 없는 파일시스템 — './video <command>' 형태만 사용"
+fi
+
+echo
 echo "== API 키 =="
 if [ -n "${BIZROUTER_API_KEY:-}" ]; then ok "BIZROUTER_API_KEY 설정됨"
 elif [ -n "${GEMINI_API_KEY:-}" ]; then ok "GEMINI_API_KEY 설정됨"

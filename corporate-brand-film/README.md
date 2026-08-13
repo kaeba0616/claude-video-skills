@@ -115,6 +115,7 @@ scripts/setup.sh                실행 환경 점검
 `bin/video` 를 PATH 에 두면 타입별로 갈라진 하나의 진입점이 된다.
 
 ```bash
+# Linux / macOS / WSL
 cp bin/video ~/.local/bin/ && chmod +x ~/.local/bin/video
 ln -sf video ~/.local/bin/video:brand-film
 ln -sf video ~/.local/bin/video:shorts
@@ -123,7 +124,14 @@ ln -sf video ~/.local/bin/video:shorts
 ```bash
 video brand-film preview      # 88초 기업 홍보영상 (16:9)
 video shorts assemble ...     # 세로형 쇼츠 (9:16)
-video:brand-film verify       # 콜론 형태도 된다
+video:brand-film verify       # 콜론 형태도 된다 (POSIX 전용 — 콜론은 Windows 파일명 불가)
+```
+
+Windows(PowerShell)는 `bin\video.ps1` 을 같은 서브커맨드로 쓴다.
+
+```powershell
+bin\video.ps1 brand-film preview
+bin\video.ps1 shorts assemble ...
 ```
 
 `~/.claude/skills/` 아래에서 스킬을 찾는다(`CLAUDE_SKILLS` 로 바꿀 수 있다).

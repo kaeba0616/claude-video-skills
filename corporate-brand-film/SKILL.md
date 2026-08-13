@@ -43,7 +43,9 @@ scripts/setup.sh          # ffmpeg · 한글 폰트 · Python 의존성 점검
 
 ## 사용법
 
-`./video <command>` 또는 `./video:<command>` 둘 다 된다. 래퍼가 절차를 강제한다. 돈이 나가는 명령은 예상 비용을 보여주고
+`./video <command>` 또는 `./video:<command>` 둘 다 된다(콜론 형태는 POSIX 전용 —
+`scripts/setup.sh` 가 심볼릭 링크로 만든다. Windows 는 `bin\video.ps1 brand-film <command>`).
+래퍼가 절차를 강제한다. 돈이 나가는 명령은 예상 비용을 보여주고
 확인 문구를 받아야 진행한다.
 
 ```bash

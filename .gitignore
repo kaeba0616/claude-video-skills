@@ -7,3 +7,4 @@ build_*/
 *.wav
 .env
 .env.*
+video:*

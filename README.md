@@ -18,6 +18,8 @@ SKILL.md 의 순서를 건너뛰지 마라 — 각 단계는 실제로 돈을 �
 
 ## 설치
 
+Linux / macOS / WSL:
+
 ```bash
 # 개인 스킬로 (어느 프로젝트에서든 쓴다)
 cp -r corporate-brand-film shorts-generate ~/.claude/skills/
@@ -26,11 +28,23 @@ cp -r corporate-brand-film shorts-generate ~/.claude/skills/
 cp -r corporate-brand-film <프로젝트>/.claude/skills/
 ```
 
-필요한 것: `ffmpeg`, 나눔고딕(Regular + ExtraBold), Python 3.12+, `pyyaml`, `requests`.
+Windows (PowerShell):
+
+```powershell
+Copy-Item -Recurse corporate-brand-film, shorts-generate "$env:USERPROFILE\.claude\skills\"
+```
+
+필요한 것: `ffmpeg`, Python 3.12+, `pyyaml`, `requests`, 한글 폰트
+(Linux 는 나눔고딕 Regular + ExtraBold, Windows 는 기본 탑재된 맑은 고딕으로 폴백).
 영상 생성에는 [bizrouter](https://bizrouter.ai) 또는 Google Gemini API 키.
 
 ```bash
-~/.claude/skills/corporate-brand-film/scripts/setup.sh   # 환경 점검
+~/.claude/skills/corporate-brand-film/scripts/setup.sh   # 환경 점검 (Linux/macOS/WSL)
+```
+
+```powershell
+winget install Gyan.FFmpeg Python.Python.3.12            # Windows — 설치 후 새 터미널
+& "$env:USERPROFILE\.claude\skills\corporate-brand-film\bin\video.ps1" brand-film prepare
 ```
 
 ## 쓰는 법
@@ -44,6 +58,7 @@ Claude Code 에서 그냥 말하면 스킬이 걸린다.
 직접 돌리려면 공통 진입점을 PATH 에 둔다.
 
 ```bash
+# Linux / macOS / WSL
 cp bin/video ~/.local/bin/ && chmod +x ~/.local/bin/video
 ln -sf video ~/.local/bin/video:brand-film
 ln -sf video ~/.local/bin/video:shorts
@@ -56,8 +71,20 @@ video brand-film preview      # 무료로 88초 완성본 (컬러바 배경, 편
 video brand-film produce      # 실제 생성 (확인 문구를 받는다)
 
 video shorts assemble ...     # 세로형 쇼츠 조립
-video:brand-film verify       # 콜론 형태도 된다
+video:brand-film verify       # 콜론 형태도 된다 (POSIX 전용 — 아래 참고)
 ```
+
+Windows 에서는 PowerShell 판 `bin/video.ps1` 을 같은 서브커맨드로 쓴다.
+
+```powershell
+bin\video.ps1 brand-film prepare
+bin\video.ps1 shorts assemble ...
+```
+
+**콜론 형태(`video:brand-film`)는 Linux/macOS 전용이다.** 콜론은 Windows
+파일명에 쓸 수 없어서 — 저장소에 콜론 파일을 담으면 Windows 에서 clone 자체가
+깨진다 — 저장소에는 담지 않고, `scripts/setup.sh` 가 POSIX 환경에서 심볼릭
+링크로 만들어 준다.
 
 디스패처는 `bin/video` 와 `corporate-brand-film/bin/video` 두 군데 있는데 같은 파일이다 —
 저장소를 통째로 받으면 앞의 것을, 스킬 하나만 떼어가면 뒤의 것을 쓴다.
