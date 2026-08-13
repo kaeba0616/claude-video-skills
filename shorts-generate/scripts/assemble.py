@@ -107,10 +107,13 @@ def main(argv=None):
     with tempfile.TemporaryDirectory() as td:
         ass_path = None
         if args.subtitles:
-            subs = json.loads(pathlib.Path(args.subtitles).read_text())
+            # 인코딩 명시 — 한국어 Windows의 기본 로케일 인코딩은 cp949라
+            # UTF-8 자막이 UnicodeDecodeError로 깨진다. libass도 UTF-8을 기대한다.
+            subs = json.loads(pathlib.Path(args.subtitles).read_text(encoding="utf-8"))
             ass_path = pathlib.Path(td) / "subs.ass"
             ass_path.write_text(subs_to_ass(subs, font=args.font,
-                                            play_w=args.width, play_h=args.height))
+                                            play_w=args.width, play_h=args.height),
+                                encoding="utf-8")
         cmd = build_ffmpeg_cmd(args.clips, args.out, args.width, args.height,
                                ass_path=ass_path)
         r = subprocess.run(cmd)

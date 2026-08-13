@@ -41,7 +41,7 @@ def load_api_key(search_dirs=None):
     for d in search_dirs:
         env = pathlib.Path(d) / ".env"
         if env.is_file():
-            for line in env.read_text().splitlines():
+            for line in env.read_text(encoding="utf-8").splitlines():
                 line = line.strip()
                 if line.startswith("BIZROUTER_API_KEY="):
                     return line.split("=", 1)[1].strip().strip('"').strip("'")
@@ -188,7 +188,8 @@ def main(argv=None):
                          "(기본은 수행 — 안 하면 일부 플레이어에서 재생 실패)")
     args = ap.parse_args(argv)
 
-    prompt = args.prompt if args.prompt else args.prompt_file.read_text()
+    # 인코딩 명시 — 한국어 Windows의 기본 로케일 인코딩(cp949)은 UTF-8 프롬프트를 못 읽는다
+    prompt = args.prompt if args.prompt else args.prompt_file.read_text(encoding="utf-8")
     payload = build_payload(args.model, prompt, args.resolution,
                             args.aspect_ratio, args.duration,
                             image=args.image, last_frame=args.last_frame,
