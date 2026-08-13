@@ -8,3 +8,4 @@ build_*/
 .env
 .env.*
 video:*
+output/
