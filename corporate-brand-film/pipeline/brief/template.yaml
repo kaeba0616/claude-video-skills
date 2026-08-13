@@ -1,0 +1,87 @@
+# 기업 홍보영상 브리프 템플릿
+#
+# 이 파일 하나가 대본·비트시트·샷리스트·영문 프롬프트·자막을 전부 만든다.
+# 복사해서 회사 정보로 채운 뒤 --brief 로 넘긴다.
+
+name_ko: 한빛소재                    # 화면과 나레이션에 나오는 사명
+name_en: HANBIT MATERIALS            # 타이틀 카드·엔드카드 (대문자로 강제됨)
+business: 이차전지 양극박·수소연료전지 분리판 정밀 소재
+founded_year: 1981
+founded_place: 창원
+founded_origin: 압연기 한 대          # "~에서 시작해" 로 이어진다
+
+slogan_ko: 보이지 않는 것이 만드는 차이   # 클로징에서 낭독된다
+slogan_en: THE INVISIBLE DIFFERENCE     # 엔드카드 3단째
+
+# 숫자 앵커 2개. 레퍼런스 28편이 예외 없이 쓰는 장치 —
+# 추상적 주장 대신 검증 가능한 숫자를 박는다.
+# ★ 서로 다른 자릿수로 골라라. 43개국과 43년이 같이 있으면 안 읽힌다.
+anchors:
+  - 8마이크로미터
+  - 1,200회의 검사
+
+# 정의 막 (18~30초). 회사가 무엇인지 선언한다.
+# 첫 줄은 훅 — 레퍼런스의 8가지 패턴 중 하나를 골라라
+# (장소 선언 / 통념 반박 / 단어 재정의 / 숫자 제시 / 자문 / 시간 이동 등).
+# references/reference-analysis.md 3절 참고.
+opening_lines:
+  - 머리카락 한 올의 십분의 일.
+  - 그 얇기 위에서 도시가 깨어납니다.
+  - 한빛소재는 보이지 않는 곳에서 세상을 움직입니다.
+
+# 전환 장치. "하지만 우리는 멈추지 않았습니다" 다음에 오는 자문.
+# 이 질문의 답이 곧 회사의 기술이어야 한다.
+pivot_question: 더 얇아지는 것이 전부일까?
+
+# 클라이맥스 (73~82초). 규모와 철학을 겹친다.
+climax_lines:
+  - 43개국으로 향하지만, 언제나 보이지 않는 곳에.
+  - 가장 얇은 것이, 가장 멀리 갑니다.
+
+# ★ 영어로만 쓴다. 한글이 섞이면 제출 전에 거부된다.
+# 33컷 전부에 이 문장이 붙어서 색·질감·카메라 성격을 하나로 묶는다.
+# ★ 필름 관련 단어 금지 — "35mm film grain" 이라고 쓰면 Veo 가 필름 스트립
+#   테두리를 화면에 그린다. "subtle fine grain" 으로 충분하다.
+style_prefix: >-
+  Cinematic corporate brand film, shallow depth of field, volumetric light,
+  teal and amber industrial color grade, subtle fine grain, slow deliberate camera,
+  photorealistic, high production value
+
+# 콜드오픈 4컷 (0~14초, 나레이션 없음). 음악만 깔린다.
+# ★ 글자가 적힌 피사체 금지 — 명판·간판·증서·눈금.
+#   부정 프롬프트로 "글자 없음"을 요구하면서 글자 물건을 지정하면 모순이고,
+#   Veo 는 피사체를 따른다.
+cold_open_subjects:
+  - extreme aerial drone shot slowly rising over a vast coastal metal manufacturing complex at blue hour, cooling towers venting steam
+  - extreme macro shot of a mirror-finish aluminium foil surface, razor-thin edge catching a single sharp highlight, dust motes drifting
+  - slow tracking shot down a dark rolling mill corridor, glowing orange metal strip flowing between massive rollers, sparks
+  - low angle shot of a clean room worker in white coverall and hood turning toward camera, backlit by cold blue panel light
+
+# 사업부 2개. 각각 5컷.
+# subjects 는 샷사이즈 5종 로테이션에 대응한다:
+#   와이드 / 극단 클로즈업 / 인물 미디엄 / CG 다이어그램 / 화이트 스튜디오
+chapters:
+  - title_ko: 초정밀 압연               # 좌하단 기술 라벨 (한글)
+    title_en: Ultra-Precision Rolling   # 그 아래 영문 부제
+    lines:
+      - 답은 두께가 아니라 균일함에 있었습니다.
+      - 폭 1미터를 오차 없이 흐르는 양극박이
+      - 배터리를 더 오래 숨 쉬게 합니다.
+    subjects:
+      - macro shot of a one meter wide aluminium foil web unspooling at speed, surface perfectly flat, cold specular reflections
+      - overhead shot of a massive rolling mill, operator silhouetted against glowing control panels
+      - extreme close up of a laser thickness gauge scanning a moving foil, red measurement line
+      - clean 3D style visualization of stacked battery cell layers separating in dark space, thin metallic sheets floating
+      - white cyclorama studio shot of a polished foil coil rotating slowly on a turntable, soft gradient light
+
+  - title_ko: 금속 분리판
+    title_en: Metallic Bipolar Plate
+    lines:
+      - 그리고 이제, 우리의 소재는 수소를 만납니다.
+      - 0.1밀리미터 위에서 물과 공기가 전기가 됩니다.
+    subjects:
+      - extreme close up of a stamped metallic bipolar plate with fine parallel flow channels, cold blue rim light
+      - clean 3D style visualization of glowing blue and white particle streams flowing through microscopic parallel channels, condensing into a single water droplet
+      - wide shot of a hydrogen fuel cell stack assembly line, robotic arms placing thin plates with precision
+      - white cyclorama studio shot of a bipolar plate rotating, catching light across its channel pattern
+      - aerial shot of a hydrogen powered truck driving a coastal highway at dawn, clean empty road

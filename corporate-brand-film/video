@@ -1,0 +1,239 @@
+#!/usr/bin/env bash
+# 기업 홍보영상 제작 — 서브커맨드 래퍼.
+#
+# 두 형태 다 된다:
+#   ./video prepare        (서브커맨드)
+#   ./video:prepare        (심볼릭 링크 — $0 에서 명령을 읽는다)
+#
+# 긴 플래그를 외우지 않아도 되게 하되, 비용 절차는 명령 자체에 박아둔다.
+# 돈이 나가는 명령(testshot·produce)은 예상 비용을 보여주고 확인을 받는다.
+set -uo pipefail
+
+SELF="$(basename "${BASH_SOURCE[0]}")"
+HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+PIPE="$HERE/pipeline"
+[ -d "$PIPE" ] || PIPE="$HERE"          # 저장소에서 직접 쓸 때
+
+BRIEF="${VIDEO_BRIEF:-brief/hanbit.yaml}"
+OUT="${VIDEO_OUT:-build}"
+PROVIDER="${VIDEO_PROVIDER:-bizrouter}"
+MUSIC="${VIDEO_MUSIC:-assets/bed.wav}"
+
+# 초당 단가(원). 예상 비용 계산과 확인 문구에 쓴다.
+RATE_PER_SEC=152                        # veo-3.1-fast 720p
+SHOTS=33
+SEC_PER_SHOT=4
+
+# 안내 문구에 쓸 호출 형태. 공통 디스패처(video brand-film ...)로 불렸으면
+# 그 형태로, 스킬 디렉터리에서 직접 불렸으면 ./video 로 안내한다 —
+# 사용자가 실제로 친 것과 다른 명령을 알려주면 그대로 따라 치다가 막힌다.
+ME="${VIDEO_INVOKED_AS:-./video}"
+
+PY=$(command -v python3 || command -v python)
+c()   { printf "\033[36m%s\033[0m\n" "$1"; }
+warn(){ printf "\033[33m%s\033[0m\n" "$1"; }
+err() { printf "\033[31m%s\033[0m\n" "$1" >&2; }
+
+run() { (cd "$PIPE" && "$PY" -m src.cli "$@"); }
+
+usage() {
+cat <<'EOF'
+사용법: ./video <command> [인자...]    또는    ./video:<command> [인자...]
+
+  prepare           실행 환경 점검 (ffmpeg · 폰트 · 의존성)
+  new <이름>        브리프 템플릿 복사 → brief/<이름>.yaml
+  script            대본·비트·샷리스트·프롬프트만 생성 (영상 없음, 무료)
+  preview           Fake 로 88초 완성본 (무료) ← 항상 여기서 시작
+  music             배경음 베드 생성 (assets/bed.wav)
+
+  testshot          실제 API 로 1컷만 (약 600원, 확인 받음)
+  produce           전체 33컷 생성 + 조립 (약 2만원, 확인 받음)
+  verify            완성본 측정 → 레퍼런스 대역 판정
+
+만든 뒤 고칠 때:
+  shots             33컷을 한 장의 컨택트시트로 (무료) ← 어느 컷이 문제인지 찾는다
+  stills [초...]    완성본에서 스틸 추출 (무료)
+  rebuild           재조립만 (무료) — 대본·자막·배경음 수정은 여기까지면 끝
+  redo <번호...>    그 컷만 다시 생성 (컷당 약 600원, 확인 받음)
+
+브리프는 환경변수로 지정한다:
+  VIDEO_BRIEF=brief/우리회사.yaml  VIDEO_OUT=live  VIDEO_PROVIDER=bizrouter
+
+예:
+  ./video new 우리회사
+  VIDEO_BRIEF=brief/우리회사.yaml ./video preview
+  VIDEO_BRIEF=brief/우리회사.yaml ./video:testshot
+  ./video shots                     # 어느 컷이 문제인지 본다
+  ./video redo 5 13 27              # 그 컷만 다시
+EOF
+}
+
+confirm() {   # confirm "질문" "확인문구"
+  warn "$1"
+  printf "계속하려면 '%s' 를 입력하세요: " "$2"
+  read -r ans
+  [ "$ans" = "$2" ] || { err "취소했습니다."; exit 1; }
+}
+
+need_key() {
+  local var="BIZROUTER_API_KEY"
+  [ "$PROVIDER" = "gemini" ] && var="GEMINI_API_KEY"
+  if [ -z "${!var:-}" ]; then
+    err "$var 환경변수가 필요합니다."
+    err "  export $var=..."
+    exit 1
+  fi
+}
+
+# ./video:prepare 처럼 불리면 파일명에서 명령을 읽는다.
+# 어느 형태든 이 지점 이후의 "$@" 는 그 명령의 인자다 — 각 case 에서
+# 다시 shift 하면 안 된다(인자가 하나씩 사라진다).
+if [[ "$SELF" == video:* ]]; then
+  cmd="${SELF#video:}"
+else
+  cmd="${1:-}"; shift || true
+fi
+
+case "$cmd" in
+  prepare)
+    # setup.sh 도 안내 문구를 쓴다 — 호출 형태를 물려준다.
+    VIDEO_INVOKED_AS="$ME" exec "$HERE/scripts/setup.sh"
+    ;;
+
+  new)
+    name="${1:-}"; name="${name##*/}"; name="${name%.yaml}"
+    [ -z "$name" ] && { err "이름을 주세요:  $ME new 우리회사"; exit 1; }
+    dst="$PIPE/brief/$name.yaml"
+    [ -e "$dst" ] && { err "이미 있습니다: $dst"; exit 1; }
+    cp "$PIPE/brief/template.yaml" "$dst"
+    c "생성: brief/$name.yaml"
+    echo "회사 정보로 채운 뒤:"
+    echo "  VIDEO_BRIEF=brief/$name.yaml $ME preview"
+    ;;
+
+  script)
+    for s in script beats shots prompts; do run "$s" --brief "$BRIEF" --out "$OUT"; done
+    c "생성 완료: $OUT/scenario.md · beatsheet.json · shotlist.json · prompts/"
+    ;;
+
+  music)
+    "$PIPE/scripts/make_bed.sh" "$PIPE/$MUSIC" 88
+    ;;
+
+  preview)
+    c "Fake 로 전 구간 실행합니다 (무료, 약 5분)"
+    run all --brief "$BRIEF" --out "$OUT" --fake || exit $?
+    c "완성: $OUT/final.mp4  — 배경은 컬러바지만 편집·자막·타이밍은 실물입니다."
+    ;;
+
+  testshot)
+    need_key
+    cost=$((RATE_PER_SEC * SEC_PER_SHOT))
+    c "먼저 드라이런 — 아무것도 제출하지 않고 배선만 확인합니다."
+    run generate --brief "$BRIEF" --out "$OUT" --live --provider "$PROVIDER" --limit 0 || exit $?
+    confirm "이제 1컷을 실제로 생성합니다. 예상 비용 약 ${cost}원." "testshot"
+    run generate --brief "$BRIEF" --out "$OUT" --live --provider "$PROVIDER" \
+        --limit 1 --budget-krw $((cost + 100)) || exit $?
+    c "완성: $OUT/clips/01.mp4 — 화질과 톤을 확인하세요."
+    echo "같은 명령을 한 번 더 돌리면 재과금 없이 건너뛰는지 확인할 수 있습니다."
+    ;;
+
+  produce)
+    need_key
+    total=$((RATE_PER_SEC * SEC_PER_SHOT * SHOTS))
+    budget=$((total + total / 10))
+    if [ ! -f "$PIPE/$OUT/clips/01.mp4" ]; then
+      warn "1컷 시험을 먼저 하는 것을 권합니다:  $ME testshot"
+      warn "화질을 확인하지 않고 전체를 생성하면, 마음에 안 들 때 전액을 다시 씁니다."
+    fi
+    confirm "전체 ${SHOTS}컷을 생성합니다. 예상 비용 약 ${total}원 (상한 ${budget}원)." "produce"
+    music_arg=()
+    [ -f "$PIPE/$MUSIC" ] && music_arg=(--music "$MUSIC")
+    run all --brief "$BRIEF" --out "$OUT" --live --provider "$PROVIDER" \
+        --budget-krw "$budget" "${music_arg[@]}" || exit $?
+    c "완성: $OUT/final.mp4"
+    ;;
+
+  shots)
+    dir="$PIPE/$OUT/clips"
+    [ -d "$dir" ] || { err "클립이 없습니다: $OUT/clips"; exit 1; }
+    sheet="$PIPE/$OUT/contact.png"
+    tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+    n=0
+    for f in "$dir"/[0-9][0-9].mp4; do
+      [ -e "$f" ] || continue
+      i=$(basename "$f" .mp4)
+      ffmpeg -hide_banner -loglevel error -y -ss 2 -i "$f" -frames:v 1 \
+        -vf "scale=320:-1,drawtext=text='$i':x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=black@0.6" \
+        "$tmp/$i.png" 2>/dev/null && n=$((n+1))
+    done
+    [ "$n" -gt 0 ] || { err "읽을 수 있는 클립이 없습니다."; exit 1; }
+    cols=4; rows=$(( (n + cols - 1) / cols ))
+    ffmpeg -hide_banner -loglevel error -y -pattern_type glob -i "$tmp/*.png" \
+      -filter_complex "tile=${cols}x${rows}:margin=8:padding=6:color=0x111111" "$sheet"
+    c "생성: $OUT/contact.png (${n}컷)"
+    echo "문제 있는 컷 번호를 확인한 뒤:  $ME redo <번호...>"
+    ;;
+
+  stills)
+    src="$PIPE/$OUT/final.mp4"
+    [ -f "$src" ] || { err "완성본이 없습니다: $OUT/final.mp4"; exit 1; }
+    times=("$@")
+    [ ${#times[@]} -eq 0 ] && times=(5 16 30 45 60 75 86)
+    dst="$PIPE/$OUT/stills"; mkdir -p "$dst"
+    for tsec in "${times[@]}"; do
+      ffmpeg -hide_banner -loglevel error -y -ss "$tsec" -i "$src" -frames:v 1 \
+        -vf scale=960:-1 "$dst/t${tsec}.png"
+    done
+    c "생성: $OUT/stills/ (${#times[@]}장)"
+    ;;
+
+  rebuild)
+    # 클립과 음성을 그대로 쓰고 자막·믹스만 다시 만든다 — 과금 없음.
+    # 브리프의 나레이션을 고쳤다면 voice 단계가 바뀐 막만 다시 합성한다
+    # (세그먼트 지문이 달라지므로). 그 경우엔 TTS 비용이 조금 든다.
+    rm -rf "$PIPE/$OUT/_work" "$PIPE/$OUT/final.mp4"
+    if [ -n "${BIZROUTER_API_KEY:-}${GEMINI_API_KEY:-}" ]; then
+      run voice --brief "$BRIEF" --out "$OUT" --live --provider "$PROVIDER" || exit $?
+    else
+      warn "API 키가 없어 나레이션은 기존 것을 그대로 씁니다."
+    fi
+    music_arg=()
+    [ -f "$PIPE/$MUSIC" ] && music_arg=(--music "$MUSIC")
+    run assemble --brief "$BRIEF" --out "$OUT" "${music_arg[@]}" || exit $?
+    c "재조립 완료: $OUT/final.mp4"
+    ;;
+
+  redo)
+    need_key
+    nums=("$@")
+    [ ${#nums[@]} -eq 0 ] && { err "컷 번호를 주세요:  $ME redo 5 13 27"; exit 1; }
+    dir="$PIPE/$OUT/clips"
+    keep="$PIPE/$OUT/clips_prev"; mkdir -p "$keep"
+    listed=""
+    for n in "${nums[@]}"; do
+      f=$(printf "%s/%02d.mp4" "$dir" "$n")
+      [ -f "$f" ] || { err "없는 컷: $n"; exit 1; }
+      listed="$listed $n"
+    done
+    cost=$(( RATE_PER_SEC * SEC_PER_SHOT * ${#nums[@]} ))
+    confirm "컷${listed} 를 다시 생성합니다 (${#nums[@]}컷, 예상 약 ${cost}원). 나머지는 건드리지 않습니다." "redo"
+    for n in "${nums[@]}"; do
+      f=$(printf "%02d.mp4" "$n")
+      mv "$dir/$f" "$keep/$f"          # 지우지 않고 옮긴다 — 새 컷이 더 나쁠 수 있다
+    done
+    run generate --brief "$BRIEF" --out "$OUT" --live --provider "$PROVIDER" \
+        --budget-krw $((cost + cost / 10 + 100)) || exit $?
+    c "이전 컷은 $OUT/clips_prev/ 에 남겨뒀습니다."
+    echo "재조립하려면:  $ME rebuild"
+    ;;
+
+  verify)
+    extra=()
+    "$PY" -c "import faster_whisper" 2>/dev/null && extra=(--transcribe)
+    run verify --brief "$BRIEF" --out "$OUT" "${extra[@]}"
+    ;;
+
+  ""|-h|--help|help) usage ;;
+  *) err "모르는 명령: $cmd"; echo; usage; exit 1 ;;
+esac

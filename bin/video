@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# 영상 제작 스킬 공통 진입점.
+#
+#   video brand-film <command>    88초 기업 홍보영상 (16:9)
+#   video shorts     <command>    세로형 쇼츠·광고 (9:16)
+#
+# 콜론 형태도 된다 (심볼릭 링크):
+#   video:brand-film <command>
+#   video:shorts     <command>
+#
+# 두 스킬의 성격이 다르다. brand-film 은 브리프 YAML 하나로 대본부터 조립까지
+# 전부 코드가 하므로 통째로 감쌀 수 있다. shorts 는 대본을 그때그때 LLM 이
+# 쓰므로(주제마다 다르다) 코드가 맡는 건 클립 생성과 조립 두 단계뿐이다 —
+# 그래서 verb 구성이 서로 다르다. 억지로 맞추면 없는 기능을 있는 척하게 된다.
+set -uo pipefail
+
+SKILLS="${CLAUDE_SKILLS:-$HOME/.claude/skills}"
+SELF="$(basename "${BASH_SOURCE[0]}")"
+
+err() { printf "\033[31m%s\033[0m\n" "$1" >&2; }
+c()   { printf "\033[36m%s\033[0m\n" "$1"; }
+
+usage() {
+cat <<EOF
+사용법: video <타입> <command> [인자...]
+
+  brand-film    88초 기업 홍보영상 (16:9) — 브리프 YAML 하나로 전 구간 자동
+  shorts        세로형 쇼츠·광고 (9:16)  — 대본은 대화로, 클립·조립은 명령으로
+
+타입별 명령을 보려면:
+  video brand-film
+  video shorts
+
+콜론 형태도 됩니다:  video:brand-film preview
+EOF
+}
+
+# video:brand-film 처럼 불리면 파일명에서 타입을 읽는다.
+if [[ "$SELF" == video:* ]]; then
+  kind="${SELF#video:}"
+else
+  kind="${1:-}"; shift || true
+fi
+
+case "$kind" in
+  brand-film|brandfilm|film)
+    dir="$SKILLS/corporate-brand-film"
+    [ -x "$dir/video" ] || { err "스킬이 없습니다: $dir"; err "설치: cp -r corporate-brand-film $SKILLS/"; exit 1; }
+    export VIDEO_INVOKED_AS="video brand-film"
+    exec "$dir/video" "$@"
+    ;;
+
+  shorts|short)
+    dir="$SKILLS/shorts-generate"
+    [ -d "$dir" ] || { err "스킬이 없습니다: $dir"; exit 1; }
+    sub="${1:-}"; shift || true
+    case "$sub" in
+      clip)
+        exec python3 "$dir/scripts/veo_generate.py" "$@"
+        ;;
+      assemble)
+        exec python3 "$dir/scripts/assemble.py" "$@"
+        ;;
+      prepare)
+        ok=1
+        for cmd in ffmpeg ffprobe python3; do
+          if command -v "$cmd" >/dev/null 2>&1; then printf "  \033[32m✓\033[0m %s\n" "$cmd"
+          else printf "  \033[31m✗\033[0m %s 없음\n" "$cmd"; ok=0; fi
+        done
+        f=$(fc-match -f "%{file}" NanumGothic 2>/dev/null || true)
+        if echo "$f" | grep -qi nanum; then printf "  \033[32m✓\033[0m NanumGothic\n"
+        else printf "  \033[31m✗\033[0m NanumGothic 없음 — 자막이 다른 폰트로 렌더링됩니다\n"; ok=0; fi
+        if [ -n "${BIZROUTER_API_KEY:-}" ]; then printf "  \033[32m✓\033[0m BIZROUTER_API_KEY\n"
+        else printf "  \033[33m-\033[0m BIZROUTER_API_KEY 없음 — 클립 생성 불가\n"; fi
+        [ "$ok" -eq 1 ] && c "준비 완료." || exit 1
+        ;;
+      ""|-h|--help|help)
+cat <<'EOF'
+사용법: video shorts <command> [인자...]
+
+  prepare                    실행 환경 점검
+  clip   <veo_generate 인자>  Veo 클립 1개 생성 (약 600원/8초)
+  assemble <assemble 인자>    클립 이어붙이기 + 자막 번인 (무료)
+
+대본과 장면 분해는 명령이 아니라 대화로 한다 — 주제마다 달라서 코드로
+고정할 수 없다. Claude Code 에서 "쇼츠 만들어줘 <주제>" 라고 하면
+shorts-generate 스킬이 대본부터 조립까지 순서대로 진행한다.
+
+직접 쓸 때:
+  video shorts clip --prompt-file prompts/scene_01.txt --out clips/scene_01.mp4 \
+      --model google/veo-3.1-lite --resolution 720p --aspect-ratio 9:16 --duration 8
+  video shorts assemble --clips clips/*.mp4 --out final.mp4 --subtitles subs.json
+EOF
+        ;;
+      *) err "모르는 명령: $sub"; echo; exec "$0" shorts help ;;
+    esac
+    ;;
+
+  ""|-h|--help|help) usage ;;
+  *) err "모르는 타입: $kind"; echo; usage; exit 1 ;;
+esac
